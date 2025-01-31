@@ -96,7 +96,7 @@ func GenerateImage(c *fiber.Ctx) error {
 	// Kirimkan respons ke klien
 	return c.Status(http.StatusOK).JSON(fiber.Map{
 		"message": "Image generated successfully",
-		"url":     config.AppEnv.AppURL + "/storage/images/" + imageRecord.ImageName + "." + imageRecord.Type,
+		"url":     config.AppEnv.AppURL + ":" + config.AppEnv.AppPort + "/storage/images/" + imageRecord.ImageName + "." + imageRecord.Type,
 	})
 }
 
