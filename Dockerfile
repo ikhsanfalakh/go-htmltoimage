@@ -1,26 +1,45 @@
-# Gunakan image resmi Golang sebagai base image
-FROM golang:1.23-alpine
 
-# Set working directory di dalam container
+# Stage 1: Build
+FROM golang:1.23-alpine AS builder
+
+# Install build dependencies in a single command
+RUN apk add --no-cache gcc musl-dev libwebp-dev
+
+# Set working directory inside the container
 WORKDIR /app
 
-# Copy go.mod dan go.sum untuk mengunduh dependencies
+# Copy go.mod and go.sum to download dependencies
 COPY go.mod go.sum ./
 
-# Unduh semua dependencies
-RUN go mod tidy
-RUN go mod download
+# Download all dependencies and clean up after
+RUN go mod tidy && go mod download
 
-# Copy seluruh kode sumber ke working directory
+# Copy all source code to the working directory
 COPY . .
 
-# Build aplikasi Golang
-#RUN go build -o main .
-#RUN GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o /go/bin/htmlcsstoimage
-RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o main
+# Build the Golang application
+RUN GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o /htmlcsstoimage
 
-# Expose port yang digunakan oleh aplikasi
+# Stage 2: Package
+FROM alpine:latest
+
+# Install minimal dependencies in one command
+RUN apk add --no-cache libwebp
+
+# Set up the working directory in the new container
+WORKDIR /app
+
+# Copy the binary from the builder stage
+COPY --from=builder /htmlcsstoimage /htmlcsstoimage
+
+# Copy only necessary files (like .env) instead of all files
+COPY .env .env
+
+# Ensure the storage/images directory exists
+RUN mkdir -p storage/images/
+
+# Expose the port used by the application
 EXPOSE 8080
 
-# Command untuk menjalankan aplikasi
-CMD ["./main"]
+# Command to run the application
+CMD ["/htmlcsstoimage"]
